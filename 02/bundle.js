@@ -8,18 +8,6 @@ btn.addEventListener('click', () => {
     const voiceB = document.querySelector('#voiceB').value;
 
     const sentences = text.split('\n').map(sentence => sentence.trim()).filter(sentence => sentence);
-    //eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNGU1ZDE0YmEtMDc4Ny00NWNiLTlmOTEtZDlmZTkyNWU3ZDc0IiwidHlwZSI6ImFwaV90b2tlbiJ9.kq_iMKBsu-03o1QQEgj8tvbNn-Gk5etT-5sCl-ZuQyA
-    // const options = {
-    //     method: 'POST',
-    //     url: 'http://api.edenai.run/v2/translation/language_detection',
-    //     headers: {
-    //         authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNGU1ZDE0YmEtMDc4Ny00NWNiLTlmOTEtZDlmZTkyNWU3ZDc0IiwidHlwZSI6ImFwaV90b2tlbiJ9.kq_iMKBsu-03o1QQEgj8tvbNn-Gk5etT-5sCl-ZuQyA',
-    //     },
-    //     data: {
-    //         providers: "amazon.google",
-    //         text: sentences[0],
-    //     }
-    // };
     const lngDetector = new (require('languagedetect'));
     let detectedLang = lngDetector.detect(sentences[0], 1);
     console.log(detectedLang[0][0]);
