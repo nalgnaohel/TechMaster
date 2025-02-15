@@ -6,12 +6,33 @@
     <title>Document</title>
     <style>
         textarea {
-            width: 40%;
+            width: 50%;
             display: block;
             margin: 10px 3%;
         }
+        textarea {
+            height: 20vh;
+        }
         .voice-selection {
             margin: 10px 3%;
+        }
+        .readonly {
+            background-color: #f5f5f5;
+            border: 1px solid #ccc;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            position: relative;
+            margin: 10px 3%;
+        }
+        .readonly-hide {
+            display: none;
+        }
+        #copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -36,8 +57,13 @@
         <button id="btn">Xuất SSML</button>
     </div>
 
-    <textarea name="dialogue" id="dialogue" cols="30" rows="10"></textarea>
-    <textarea name="output-ssml" id="output-ssml" cols="30" rows="10"></textarea>
+    <textarea name="dialogue" id="dialogue"></textarea>
+    <div id="ssml-display" class="readonly-hide">
+        <pre id="output-ssml" class="language-xml"></pre>
+        <button id="copy-btn">Copy to Clipboard</button>
+    </div>
+    <button id="copy-btn"></button>
 </body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.25.0/prism.min.js"></script>
 <script src="./bundle.js"></script>
 </html>

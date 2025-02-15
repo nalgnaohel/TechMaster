@@ -1,34 +1,27 @@
 package main
 
 import (
-	"encoding/json"
 	iris "github.com/kataras/iris/v12"
-	"fmt"
 )
 
 func main() {
-	//Initialize Iris application
+	// Initialize Iris application
 	app := iris.New()
 
-	//Register a route
-	app.Get("/hello", func(ctx iris.Context) {
-		//Create a map
-		data := map[string]string{"message": "Hello, World!"}
+	// Set the views directory
+	app.RegisterView(iris.HTML("./views", ".html"))
 
-		//Marshal the map into JSON
-		jsonData, err := json.Marshal(data)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+	// Register a route to serve the HTML form
+	app.Get("/", func(ctx iris.Context) {
+		ctx.View("index.html")
+	})
 
-		//Set the response header
-		ctx.Header("Content-Type", "application/json")
-
-		//Write the JSON data to the response
-		ctx.Write(jsonData)
+	// Register a route to handle form submission
+	app.Post("/submit", func(ctx iris.Context) {
+		question := ctx.FormValue("question")
+		ctx.View("index.html")
+		ctx.HTML("Received question: " + question)
 	})
 
 	app.Listen(":8080")
-
 }

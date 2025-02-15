@@ -1,24 +1,13 @@
 const btn = document.getElementById('btn');
+const copyBtn = document.getElementById('copy-btn');
 const outputSSML = document.querySelector('#output-ssml');
 btn.addEventListener('click', () => {
-    console.log('Button clicked');
     const text = document.querySelector('#dialogue').value;
     const voiceA = document.querySelector('#voiceA').value;
     const voiceB = document.querySelector('#voiceB').value;
 
     const sentences = text.split('\n').map(sentence => sentence.trim()).filter(sentence => sentence);
-    //eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNGU1ZDE0YmEtMDc4Ny00NWNiLTlmOTEtZDlmZTkyNWU3ZDc0IiwidHlwZSI6ImFwaV90b2tlbiJ9.kq_iMKBsu-03o1QQEgj8tvbNn-Gk5etT-5sCl-ZuQyA
-    // const options = {
-    //     method: 'POST',
-    //     url: 'http://api.edenai.run/v2/translation/language_detection',
-    //     headers: {
-    //         authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNGU1ZDE0YmEtMDc4Ny00NWNiLTlmOTEtZDlmZTkyNWU3ZDc0IiwidHlwZSI6ImFwaV90b2tlbiJ9.kq_iMKBsu-03o1QQEgj8tvbNn-Gk5etT-5sCl-ZuQyA',
-    //     },
-    //     data: {
-    //         providers: "amazon.google",
-    //         text: sentences[0],
-    //     }
-    // };
+    console.log(sentences);
     const lngDetector = new (require('languagedetect'));
     let detectedLang = lngDetector.detect(sentences[0], 1);
     console.log(detectedLang[0][0]);
@@ -27,14 +16,45 @@ btn.addEventListener('click', () => {
     } else {
         detectedLang[0][0] = "vi-VI";
     }
-    let ssml = `<speak xml:lang=${detectedLang[0][0]}>`;
-    sentences.forEach((sentence, index) => {
-        const voice = index % 2 === 0 ? voiceA : voiceB;
-        ssml += `
-        <voice name="${voice}">
-            ${sentence}
-        </voice>`;
+    let ssml = `<speak xml:lang=${detectedLang[0][0]}>\n`;
+    let curVoiceID = 0;
+    const voices = [voiceA, voiceB];
+    let curDialogue = "";
+    sentences.forEach((sentence) => {
+        const components = sentence.split(':');
+        console.log(components);
+        if (components.length === 1) {
+            curDialogue += sentence + ' ';
+        } else {
+            if (curDialogue !== "") {
+                ssml += `\t<voice name="${voices[curVoiceID]}">${curDialogue.substring(0, curDialogue.length - 1)}</voice>\n`;
+            curVoiceID = 1 - curVoiceID;
+            }
+            curDialogue = "";
+            curDialogue += components[1] + ' ';
+        }
+        
     });
+    if (curDialogue !== "") {
+        ssml += `\t<voice name="${voices[curVoiceID]}">${curDialogue}</voice>\n`;
+    }
     ssml += '</speak>';
     outputSSML.textContent = ssml;
+    document.querySelector('#ssml-display').className = 'readonly';
+    Prism.highlightElement(outputSSML);
+
+    const contentLength = ssml.length;
+    const minWidth = 300; // Minimum width in pixels
+    const maxWidth = 800; // Maximum width in pixels
+    const width = Math.min(maxWidth, Math.max(minWidth, contentLength * 8)); // Adjust the multiplier as needed
+    outputSSML.style.width = `${width}px`;
+});
+
+copyBtn.addEventListener('click', () => {
+    const ssmlContent = outputSSML.textContent;
+    navigator.clipboard.writeText(ssmlContent).then(() => {
+        alert('SSML content copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
+    });
 });
