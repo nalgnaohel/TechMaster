@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        textarea {
+            width: 40%;
+            display: block;
+            margin: 10px 3%;
+        }
+        .voice-selection {
+            margin: 10px 3%;
+        }
+    </style>
+</head>
+<body>
+    <div class="voice-selection">
+        <select name="voiceA" id="voiceA">
+            <option value="" disabled selected>Voice A</option>
+            <option value="en-US-AndrewMultilingualNeural">en-US-AndrewMultilingualNeural</option>
+            <option value="en-US-ChristopherNeural">en-US-ChristopherNeural</option>
+            <option value="en-US-EricNeural">en-US-EricNeural</option>
+            <option value="vi-VN-HoaiMyNeural">vi-VN-HoaiMyNeural</option>
+            <option value="vi-VN-NamMinhNeural">vi-VN-NamMinhNeural</option>
+        </select>
+        <select name="voiceB" id="voiceB">
+            <option value="" disabled selected>Voice B</option>
+            <option value="en-US-AndrewMultilingualNeural">en-US-AndrewMultilingualNeural</option>
+            <option value="en-US-ChristopherNeural">en-US-ChristopherNeural</option>
+            <option value="en-US-EricNeural">en-US-EricNeural</option>
+            <option value="vi-VN-HoaiMyNeural">vi-VN-HoaiMyNeural</option>
+            <option value="vi-VN-NamMinhNeural">vi-VN-NamMinhNeural</option>
+        </select>
+        <button id="btn">Xuất SSML</button>
+    </div>
+
+    <textarea name="dialogue" id="dialogue" cols="30" rows="10"></textarea>
+    <textarea name="output-ssml" id="output-ssml" cols="30" rows="10"></textarea>
+</body>
+<script src="./bundle.js"></script>
+</html>
