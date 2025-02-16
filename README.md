@@ -1,7 +1,5 @@
 # TechMaster
 
-## 01
-
 ---
 ## Chạy prj 01
 * Yêu cầu với môi trường trước khi chạy
