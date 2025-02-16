@@ -50,15 +50,19 @@ btn.addEventListener('click', () => {
     const width = Math.min(maxWidth, Math.max(minWidth, contentLength * 8)); // Adjust the multiplier as needed
     outputSSML.style.width = `${width}px`;
 
-    hljs.highlightElement(outputSSML);
+    delete outputSSML.dataset.highlighted;
+
+        // Highlight the SSML code
+        hljs.highlightElement(outputSSML);
+
 });
 
-document.addEventListener('DOMContentLoaded', (event) => {
-  console.log("F");
-document.querySelectorAll('pre code').forEach((el) => {
-hljs.highlightElement(el);
-});
-});
+// document.addEventListener('DOMContentLoaded', (event) => {
+//   console.log("F");
+// document.querySelectorAll('pre code').forEach((el) => {
+// hljs.highlightElement(el);
+// });
+// });
 
 copyBtn.addEventListener('click', () => {
     const ssmlContent = outputSSML.textContent;
