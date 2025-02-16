@@ -11,8 +11,8 @@ type GroqMessage struct {
 
 type GroqRequest struct {
 	Messages    []GroqMessage `json:"messages"`
-	LLMModel    string        `json:"llmmodel"`
-	MaxTokens   int           `json:"maxtokens"`
+	LLMModel    string        `json:"model"`
+	MaxTokens   int           `json:"max_tokens"`
 	Temperature float64       `json:"temperature"`
 	TopP        int           `json:"top_p"`
 	Stream      bool          `json:"stream"`

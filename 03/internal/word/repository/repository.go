@@ -3,6 +3,7 @@ package repository
 import (
 	"03/internal/models"
 	"03/internal/word"
+	"errors"
 
 	"gorm.io/gorm"
 )
@@ -48,11 +49,11 @@ func (wr *wordRepository) GetAll() (*models.WordList, error) {
 }
 
 func (wr *wordRepository) Create(word *models.Word) (*models.Word, error) {
-	err := wr.db.Where("content = ? AND translate = ?", word.Content, word.Translate).First(&word).Error
+	err := wr.db.Table("word").Where("content = ? AND translate = ?", word.Content, word.Translate).First(&word).Error
 	if err == nil {
-		return word, nil
+		return word, errors.New("word already exists")
 	}
-	er := wr.db.Create(word).Error
+	er := wr.db.Table("word").Create(word).Error
 	if er != nil {
 		return nil, er
 	}
@@ -60,7 +61,7 @@ func (wr *wordRepository) Create(word *models.Word) (*models.Word, error) {
 }
 
 func (wr *wordRepository) AddDialogWord(dialogID int64, wordID int64) error {
-	err := wr.db.Exec("INSERT INTO dialog_words (dialog_id, word_id) VALUES (?, ?)", dialogID, wordID).Error
+	err := wr.db.Exec("INSERT INTO word_dialog (dialog_id, word_id) VALUES (?, ?)", dialogID, wordID).Error
 	if err != nil {
 		return err
 	}

@@ -25,8 +25,9 @@
 </head>
 <body>
     <form action="/submit" method="post">
-        <textarea name="question" placeholder="Type your question here..."></textarea>
-        <button type="submit">Ask</button>
+        <textarea name="prompt" id="prompt" placeholder="Type your question here..."></textarea>
+        <button type="submit" id="submit-btn">Ask</button>
     </form>
+    <div id="response"></div>
 </body>
 </html>

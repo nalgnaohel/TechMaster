@@ -38,7 +38,7 @@ func (dr *dialogRepository) GetAll() (*models.DialogList, error) {
 }
 
 func (dr *dialogRepository) Create(dialog *models.Dialog) (*models.Dialog, error) {
-	err := dr.db.Create(dialog).Error
+	err := dr.db.Table("dialog").Create(dialog).Error
 	if err != nil {
 		return nil, err
 	}
