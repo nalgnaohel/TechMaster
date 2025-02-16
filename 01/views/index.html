@@ -3,8 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ask a Question</title>
+    <title>Chat Completion</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet" />
     <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+        }
+        .box {
+            width: 80%;
+            padding: 20px;
+            margin: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            overflow-wrap: break-word;
+        }
+        .box pre {
+            white-space: pre-wrap;
+        }
+        .box code {
+            background-color: #f0f0f0;
+            padding: 5px;
+            border-radius: 3px;
+            display: block;
+            margin: 10px 0;
+        }
         textarea {
             width: 50vw;
             height: 10vh;
@@ -22,11 +48,54 @@
             background-color: #45a049;
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-xml.min.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-    <form action="/submit" method="post">
-        <textarea name="question" placeholder="Type your question here..."></textarea>
-        <button type="submit">Ask</button>
-    </form>
+    <div class="container">
+        <form action="/submit" method="post">
+            <textarea name="prompt" id="prompt" placeholder="Type your question here..." rows="4" cols="50">{{.Prompt}}</textarea>
+            <button type="submit">Send</button>
+        </form>
+        {{if .Result}}
+        <div id="answer" class="box">
+            <h3>Response</h3>
+            <pre id="output-answer">{{.Result}}</pre>
+            <button id="copy-btn">Copy to Clipboard</button>
+        </div>
+        {{end}}
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const outputAnswer = document.getElementById('output-answer');
+            if (outputAnswer) {
+                console.log(outputAnswer.innerText);
+                let text = outputAnswer.innerHTML;
+                text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                text = text.replace(/<think>(.*?)<\/think>/gs, '<em>$1</em>');
+                const thinkEndIndex = text.lastIndexOf('/think');
+                if (thinkEndIndex !== -1) {
+                    text = text.substring(thinkEndIndex + 10);
+                }
+
+                text = text.replace(/```(.*?)```/gs, '<code>$1</code>');
+                text = text.replace(/^### (.*)$/gm, '<h3>$1</h3>');
+                outputAnswer.innerHTML = text;
+                MathJax.typesetPromise([outputAnswer]);
+                Prism.highlightElement(outputAnswer.querySelector('code'));
+
+            }
+        });
+
+        document.getElementById('copy-btn').addEventListener('click', function() {
+            const answer = document.getElementById('output-answer').innerText;
+            navigator.clipboard.writeText(answer).then(() => {
+                alert('Copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        });
+    </script>
 </body>
 </html>

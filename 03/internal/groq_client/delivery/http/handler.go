@@ -3,6 +3,7 @@ package http
 import (
 	"03/internal/groq_client"
 	"03/internal/models"
+	"context"
 	"log"
 	"os"
 
@@ -29,12 +30,20 @@ func (gh *groqHandler) ChatCompletion(ctx iris.Context) {
 		ApiKey: apiKey,
 	}
 
-	result, err := gh.GroqBusiness.ChatCompletion(groqClient, prompt)
+	c := ctx.Request().Context()
+	if c == nil {
+		c = context.Background()
+	}
+
+	jsonWords, dialog, err := gh.GroqBusiness.ChatCompletion(c, groqClient, prompt)
 	if err != nil {
 		ctx.StatusCode(iris.StatusInternalServerError)
 		ctx.WriteString("FF2: " + err.Error())
 		return
 	}
 	ctx.StatusCode(iris.StatusOK)
-	ctx.View("index.html", result)
+	ctx.ViewData("Prompt", prompt)
+	ctx.ViewData("JsonWords", *jsonWords)
+	ctx.ViewData("Dialog", *dialog)
+	ctx.View("index.html")
 }

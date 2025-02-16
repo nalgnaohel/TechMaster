@@ -17,7 +17,7 @@ btn.addEventListener('click', () => {
     } else {
         detectedLang[0][0] = "vi-VI";
     }
-    let ssml = `<speak xml:lang=${detectedLang[0][0]}>\n`;
+    let ssml = `<speak xml:lang=\"${detectedLang[0][0]}\">\n`;
     let curVoiceID = 0;
     const voices = [voiceA, voiceB];
     let curDialogue = "";
@@ -28,7 +28,7 @@ btn.addEventListener('click', () => {
             curDialogue += sentence + ' ';
         } else {
             if (curDialogue !== "") {
-                ssml += `\t<voice name="${voices[curVoiceID]}">${curDialogue.substring(0, curDialogue.length - 1)}</voice>\n`;
+                ssml += `<voice name="${voices[curVoiceID]}">${curDialogue.substring(0, curDialogue.length - 1)}</voice>\n`;
             curVoiceID = 1 - curVoiceID;
             }
             curDialogue = "";
@@ -37,18 +37,27 @@ btn.addEventListener('click', () => {
         
     });
     if (curDialogue !== "") {
-        ssml += `\t<voice name="${voices[curVoiceID]}">${curDialogue}</voice>\n`;
+        ssml += `<voice name="${voices[curVoiceID]}">${curDialogue}</voice>\n`;
     }
-    ssml += '</speak>';
+    ssml += `</speak>`;
     outputSSML.textContent = ssml;
+    console.log(ssml);
     document.querySelector('#ssml-display').className = 'readonly';
-    Prism.highlightElement(outputSSML);
 
     const contentLength = ssml.length;
     const minWidth = 300; // Minimum width in pixels
     const maxWidth = 800; // Maximum width in pixels
     const width = Math.min(maxWidth, Math.max(minWidth, contentLength * 8)); // Adjust the multiplier as needed
     outputSSML.style.width = `${width}px`;
+
+    hljs.highlightElement(outputSSML);
+});
+
+document.addEventListener('DOMContentLoaded', (event) => {
+  console.log("F");
+document.querySelectorAll('pre code').forEach((el) => {
+hljs.highlightElement(el);
+});
 });
 
 copyBtn.addEventListener('click', () => {

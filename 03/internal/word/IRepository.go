@@ -1,6 +1,9 @@
 package word
 
-import "03/internal/models"
+import (
+	"03/internal/models"
+	//"context"
+)
 
 type WordRepository interface {
 	// GetWord returns a word from the repository

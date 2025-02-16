@@ -13,6 +13,7 @@ import (
 	groqBusiness "03/internal/groq_client/business"
 	groqDelivery "03/internal/groq_client/delivery/http"
 	wordRepo "03/internal/word/repository"
+	"time"
 )
 
 func main() {
@@ -62,7 +63,8 @@ func main() {
 	wr := wordRepo.NewWordRepository(psqlDB)
 	dr := dialogRepo.NewDialogRepository(psqlDB)
 
-	groqBusiness := groqBusiness.NewGroqBusiness(dr, wr)
+	timeoutContext := time.Duration(5) * time.Second
+	groqBusiness := groqBusiness.NewGroqBusiness(dr, wr, timeoutContext)
 	groqDelivery.NewGroqHandler(app, groqBusiness)
 	// Set the views directory
 	app.RegisterView(iris.HTML("./views", ".html"))

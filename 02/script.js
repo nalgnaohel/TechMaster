@@ -16,7 +16,7 @@ btn.addEventListener('click', () => {
     } else {
         detectedLang[0][0] = "vi-VI";
     }
-    let ssml = `<speak xml:lang=${detectedLang[0][0]}>\n`;
+    let ssml = `<speak version=\"1.0\" xmlns=\"http://www.w3.org/2001/10/synthesis\" xml:lang=\"" + detectedLang[0][0] + "\">\n`;
     let curVoiceID = 0;
     const voices = [voiceA, voiceB];
     let curDialogue = "";
@@ -38,10 +38,10 @@ btn.addEventListener('click', () => {
     if (curDialogue !== "") {
         ssml += `\t<voice name="${voices[curVoiceID]}">${curDialogue}</voice>\n`;
     }
-    ssml += '</speak>';
+    ssml += `</speak>`;
     outputSSML.textContent = ssml;
+    console.log(ssml);
     document.querySelector('#ssml-display').className = 'readonly';
-    Prism.highlightElement(outputSSML);
 
     const contentLength = ssml.length;
     const minWidth = 300; // Minimum width in pixels

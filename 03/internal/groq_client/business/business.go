@@ -6,46 +6,53 @@ import (
 	"03/internal/models"
 	"03/internal/word"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type groqBusiness struct {
-	dialogRepo dialog.DialogRepository
-	wordRepo   word.WordRepository
+	dialogRepo     dialog.DialogRepository
+	wordRepo       word.WordRepository
+	contextTimeout time.Duration
 }
 
-func NewGroqBusiness(dialogRepo dialog.DialogRepository, wordRepo word.WordRepository) groq_client.GroqBusiness {
+func NewGroqBusiness(dialogRepo dialog.DialogRepository, wordRepo word.WordRepository, timeout time.Duration) groq_client.GroqBusiness {
 	return &groqBusiness{
-		dialogRepo: dialogRepo,
-		wordRepo:   wordRepo,
+		dialogRepo:     dialogRepo,
+		wordRepo:       wordRepo,
+		contextTimeout: timeout,
 	}
 }
 
-func (gb *groqBusiness) ChatCompletion(groqClient *models.GroqClient, prompt string) (*string, error) {
+func (gb *groqBusiness) ChatCompletion(c context.Context, groqClient *models.GroqClient, prompt string) (*string, *string, error) {
+	ctx, cancel := context.WithTimeout(c, gb.contextTimeout)
+	defer cancel()
+	fmt.Println("Called!: ")
 	groqMessage := make([]models.GroqMessage, 0)
 	if prompt != "" {
 		prompt += "Sau đó, từ đoạn hội thoại vừa tạo, lọc ra các từ quan trọng, bỏ qua danh từ riêng cần học. Danh sách các từ này được trả về dưới dạng JSON trong thẻ 'words'." +
 			" Tiếp đó, dịch từng từ trong danh sách vừa tạo sang tiếng Anh, rồi trả về JSON gồm mảng trong đó mỗi phần tử gồm từ tiếng Việt (thẻ 'vi') và từ tiếng Anh tương đương (thẻ 'en')." +
-			" Chỉ cần xuất ra hội thoại, 2 JSON danh sách từ và không cần giải thích. Mảng và 2 danh sách từ được phân cách nhau bởi câu \"---------\"."
+			" Chỉ cần xuất ra hội thoại, 2 JSON danh sách từ và không cần giải thích. "
 		prompt += "Không đánh số các câu trong hội thoại."
 		userMessage := models.GroqMessage{
 			Role:    "user",
 			Content: prompt,
 		}
 		groqMessage = append(groqMessage, userMessage)
-		fmt.Println(groqMessage)
+		//fmt.Println(groqMessage)
 	} else {
-		return nil, errors.New("prompt is empty")
+		return nil, nil, errors.New("prompt is empty")
 	}
 	groqRequest := &models.GroqRequest{
 		Messages:    groqMessage,
 		LLMModel:    "deepseek-r1-distill-llama-70b",
-		MaxTokens:   2048,
+		MaxTokens:   3500,
 		Temperature: 0.2,
 		TopP:        1,
 		Stream:      false,
@@ -53,7 +60,7 @@ func (gb *groqBusiness) ChatCompletion(groqClient *models.GroqClient, prompt str
 	}
 	groqRequestJson, err := json.Marshal(groqRequest)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	//send request to Groq API
@@ -64,7 +71,7 @@ func (gb *groqBusiness) ChatCompletion(groqClient *models.GroqClient, prompt str
 
 	//fmt.Println("buffer: ", bytes.NewBuffer(groqRequestJson), "\n")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	//add Headers to post request
@@ -73,9 +80,9 @@ func (gb *groqBusiness) ChatCompletion(groqClient *models.GroqClient, prompt str
 
 	//fmt.Printf("request: ", request, "\n")
 	client := &http.Client{}
-	resp, err := client.Do(request)
+	resp, err := client.Do(request.WithContext(ctx))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
@@ -88,80 +95,95 @@ func (gb *groqBusiness) ChatCompletion(groqClient *models.GroqClient, prompt str
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		bodyString := string(bodyBytes)
 		fmt.Println("Response Body:", bodyString)
-		return nil, errors.New("unexpected status code: " + resp.Status + " - " + bodyString)
+		return nil, nil, errors.New("unexpected status code: " + resp.Status + " - " + bodyString)
 	}
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	groqResponse := &models.GroqResponse{}
 	err = json.Unmarshal(respBody, &groqResponse)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	//save dialog to database
 	var responseString string
+	var dialogContent string
 	if groqResponse.Choices != nil && len(groqResponse.Choices) > 0 {
 		responseContent := groqResponse.Choices[0].Message.Content
-		resCompos := strings.Split(responseContent, "json")
-		responseString = resCompos[0][0:]
-		fmt.Println("Dialog: ", responseString)
+		responseString = responseContent
 		pos := strings.Index(responseString, "/think")
 		if pos != -1 {
-			responseString = responseString[pos+9:]
+			st := pos + 7
+			for responseString[st] == ' ' || responseString[st] == '\n' {
+				st++
+			}
+			responseString = responseString[st:]
 		}
-		poss := strings.Index(responseString, "---------")
-		responseString = responseString[0 : poss-2]
+		//fmt.Println("Dialog: ", responseString, " ", len(resCompos))
+		poss := strings.Index(responseString, "\n\n")
 
 		dialog := &models.Dialog{
 			Lang:    "vi",
-			Content: responseString,
+			Content: responseString[:poss],
 		}
 		createdDialog, err := gb.dialogRepo.Create(dialog)
 		fmt.Println("Created dialog: ", createdDialog)
-		if err != nil {
-			return &responseString, errors.New("error saving dialog to database")
-		}
-		fmt.Println("List vi-en:\n", resCompos[2])
-		//save words to database
-		transPairs := strings.Split(resCompos[2], "},")
-		for _, pair := range transPairs {
-			startViID := strings.Index(pair, "\"vi\":")
-			startEnID := strings.Index(pair, "\"en\":")
-			st1, st2 := min(startViID, startEnID), max(startViID, startEnID)
-			ed1, ed2 := st2-1, len(pair)-1
-			for pair[ed1] != '"' {
-				ed1--
-			}
-			for pair[ed2] != '"' {
-				ed2--
-			}
-			content1 := pair[st1+7 : ed1]
-			content2 := pair[st2+7 : ed2]
-			fmt.Println("content1: ", content1)
-			fmt.Println("content2: ", content2)
 
-			word := &models.Word{
-				Lang:      "vi",
-				Content:   content1,
-				Translate: content2,
-			}
-			createdWord, err := gb.wordRepo.Create(word)
-			if err != nil {
-				if err.Error() != "word already exists" {
-					return &responseString, errors.New("error saving word to database")
+		if err != nil {
+			return nil, nil, errors.New("error saving dialog to database")
+		}
+		dialogContent = responseString[:poss]
+		//save words to database
+		stID := strings.Index(responseString, "\"vi\":")
+		if stID == -1 {
+			return nil, &responseString, errors.New("no words")
+		}
+		responseString = responseString[stID:]
+		cont1, cont2 := "", ""
+		for i := 0; i < len(responseString)-6; i++ {
+			//fmt.Println("i: ", responseString[i:i+5])
+			if responseString[i:i+5] == "\"vi\":" {
+				ed := strings.Index(responseString[i:], ",")
+				cont1 = responseString[i+7 : i+ed-1]
+				i += ed
+			} else if responseString[i:i+5] == "\"en\":" {
+				st := strings.Index(responseString[i+5:], "\"")
+				if st == -1 {
+					continue
 				}
-			}
-			fmt.Println("Created word: ", createdWord)
-			er := gb.wordRepo.AddDialogWord(createdDialog.ID, createdWord.ID)
-			if er != nil {
-				return &responseString, errors.New("error saving dialog word to database")
+				ed := strings.Index(responseString[i+5+st+1:], "\"")
+				cont2 = responseString[i+5+st+1 : i+6+st+ed]
+				i += 6 + st + ed
+
+				word := &models.Word{
+					Lang:      "vi",
+					Content:   cont1,
+					Translate: cont2,
+				}
+				createdWord, err := gb.wordRepo.Create(word)
+				if err != nil {
+					if err.Error() != "word already exists" {
+						return nil, &createdDialog.Content, errors.New("error saving word to database")
+					}
+				}
+				fmt.Println("Created word: ", createdWord)
+				er := gb.wordRepo.AddDialogWord(createdDialog.ID, createdWord.ID)
+				if er != nil {
+					if er.Error() != "dialog word already exists" {
+						return nil, &createdWord.Content, errors.New("error saving dialog word to database")
+					}
+				}
 			}
 		}
 	} else {
-		return nil, fmt.Errorf("no choices")
+		return nil, nil, fmt.Errorf("no choices")
 	}
-	return &responseString, nil
+	dialogContent = strings.TrimLeft(dialogContent, "Hội thoại:")
+	responseString = "{\n  {" + responseString
+	responseString = strings.TrimSuffix(responseString, "\n")
+	responseString = strings.TrimSuffix(responseString, "```")
+	return &responseString, &dialogContent, nil
 }
